@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Portfolio</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@800;900&family=Instrument+Sans:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div id="cu"></div><i id="pg"></i><style id="fs"></style><div id="wp"><b></b></div><div id="fp"><img alt=""></div>
+
+<div id="root">
+<header class="nav">
+  <div class="logo" data-img><img alt="Logo"><span>LOGO</span><b class="x" data-act="inv">Inverti colori</b></div>
+  <nav><a href="#lavori">Lavori</a><a href="#chi">Chi sono</a><a href="#contatti">Contatti</a></nav>
+</header>
+
+<section class="hero">
+  <video class="reel" muted loop autoplay playsinline></video>
+  <div class="tl" style="top:90px;left:5vw"><button data-act="reel">Showreel</button></div>
+  <h1><span data-e>Nome</span><span class="o" data-e>Cognome</span></h1>
+  <div class="row">
+    <p data-e>Graphic designer e video maker. Identità visive, editoria e video che restano in testa.</p>
+    <a href="#lavori">Guarda i lavori</a>
+  </div>
+</section>
+
+<section id="ix">
+  <div class="sh"><h2>Lavori</h2></div>
+  <ul id="cats"></ul>
+  <button class="ad" data-act="addcat">Aggiungi una categoria</button>
+</section>
+
+<section id="lavori">
+  <div class="sh sx"><div><a class="bk" href="#/">Indietro</a><h2>Lavori</h2></div><button class="f" data-act="film">Vista a rullino</button></div>
+  <div id="grid"></div>
+  <button class="ad" data-act="add">Aggiungi un progetto</button>
+</section>
+
+<section id="chi" class="inv">
+  <div class="sh"><h2>Chi sono</h2></div>
+  <div class="ab">
+    <div class="ph" data-img><img alt="Foto"></div>
+    <div>
+      <p class="big" data-e>Scrivi qui chi sei, come lavori e cosa ti muove. Clicca "Modifica" e sostituisci questo testo con il tuo.</p>
+      <h4>Competenze</h4>
+      <ul id="sk"></ul>
+      <button class="ad" data-act="addsk">Aggiungi una competenza</button>
+    </div>
+  </div>
+</section>
+
+<section id="contatti">
+  <a class="mail" data-e data-l href="mailto:tuamail@email.com">tuamail@email.com</a>
+  <ul id="ct"></ul>
+  <button class="ad" data-act="addct">Aggiungi un contatto</button>
+</section>
+
+<footer><span data-e>© 2026 Nome Cognome</span><a href="#">Torna su</a></footer>
+</div>
+
+<div id="lb"><button data-act="close">Chiudi</button><div id="lbc"></div><div id="lbn"><button data-act="prev">Precedente</button><span id="lbs"></span><button data-act="next">Successivo</button></div></div>
+<div id="ts"></div>
+<div id="bar">
+  <b>Editor</b>
+  <button id="tg" data-act="tg">Modifica</button>
+  <button data-act="dl">Scarica index.html</button>
+  <button data-act="rs">Ripristina</button>
+</div>
+
+<script src="script.js"></script>
+</body>
+</html>
