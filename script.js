@@ -7,12 +7,12 @@ const li=(a,b)=>`<li><span data-e>${a}</span>${b?`<a data-e data-l href="#">${b}
 const gh=()=>{try{return JSON.parse(localStorage.getItem('portfolio-gh'))}catch(e){return null}},up={},hd={};
 const sk=(a,p)=>`<li><span data-e>${a}</span><span class="bar"><i style="--p:${p/100}"></i></span><b class="pc">${p}%</b><input class="rg" type="range" min="0" max="100" value="${p}" aria-label="Percentuale della competenza"><b class="x" data-act="rm">Togli</b></li>`;
 const catLi=c=>`<li><a href="#/${encodeURIComponent(c)}" data-c="${c}">${c}</a><span class="n"></span><b class="x" data-act="rmcat">Togli</b></li>`;
-const toast=m=>{const e=$('#ts');e.textContent=m;e.classList.add('on');setTimeout(()=>e.classList.remove('on'),4000)};
+const toast=(m,d=4000)=>{const e=$('#ts');e.textContent=m;e.classList.add('on');setTimeout(()=>e.classList.remove('on'),d)};
 
 /* carica contenuto salvato nel browser, oppure quello di partenza */
 let saved=false;
 try{const s=localStorage.getItem(K);if(s){root.innerHTML=s;saved=true}}catch(e){}
-if(!saved&&!root.dataset.init){
+if(!saved&&!root.dataset.init&&!$('#cats').children.length&&!$('#grid').children.length){
   $('#grid').innerHTML=card('Grafica')+card('Video')+card('Motion');
   $('#cats').innerHTML=['Grafica','Video','Motion'].map(catLi).join('');
   $('#sk').innerHTML=[['Identità visiva',90],['Editoria e impaginazione',85],['Video editing',80],['Motion graphics',70]].map(x=>sk(...x)).join('');
@@ -20,6 +20,7 @@ if(!saved&&!root.dataset.init){
   root.dataset.init=1;
 }
 $$('#sk li').forEach(l=>{if(!$('.bar',l))l.outerHTML=sk($('span',l).textContent,80)});
+root.dataset.init=1;
 
 const save=()=>{try{localStorage.setItem(K,root.innerHTML.replace(/ contenteditable="true"/g,'').replace(/<video class="pv"[^>]*><\/video>/g,'').replace(/ class="sel"/g,'').replace(/ sel"/g,'"'))}catch(e){toast('Memoria del browser piena: premi "Scarica index.html" per non perdere le modifiche.')}};
 function setEdit(on){
@@ -198,9 +199,9 @@ async function pub(){
     const nt=await api('/git/trees',{method:'POST',body:JSON.stringify({base_tree:cm.tree.sha,tree})});
     const nc=await api('/git/commits',{method:'POST',body:JSON.stringify({message:'Aggiornamento portfolio',tree:nt.sha,parents:[ref]})});
     await api('/git/refs/heads/'+b,{method:'PATCH',body:JSON.stringify({sha:nc.sha})});
-    mk.forEach(f=>f());try{localStorage.removeItem(K)}catch(e){}
-    toast('Pubblicato! Il sito online si aggiorna tra circa un minuto.');
-  }catch(err){H.classList.add('admin');toast('Errore nella pubblicazione: '+err.message)}
+    mk.forEach(f=>f());
+    toast('Pubblicato su GitHub! Il sito online si aggiorna tra circa un minuto.',10000);
+  }catch(err){H.classList.add('admin');toast('ERRORE, non pubblicato: '+err.message,20000)}
   if(w)setEdit(true);
 }
 addEventListener('beforeunload',e=>{if(Object.values(up).some(o=>!o.d))e.preventDefault()});
