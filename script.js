@@ -4,6 +4,7 @@ let edit=false,t,n=0,LB=[];
 
 const card=(c='')=>`<article class="card" data-cat="${c}"><div class="media" data-img><img alt=""></div><div class="gal"></div><div class="meta"><h3 data-e>Titolo progetto</h3><p data-e>Descrizione breve, anno</p></div><div class="tl"><button data-act="img">Immagini</button><button data-act="cat">Categoria</button><button data-act="vid">Video</button><button data-act="prv">Anteprima</button><button data-act="ba">Prima e dopo</button><button data-act="del">Elimina</button></div></article>`;
 const li=(a,b)=>`<li><span data-e>${a}</span>${b?`<a data-e data-l href="#">${b}</a>`:''}<b class="x" data-act="rm">Togli</b></li>`;
+const gh=()=>{try{return JSON.parse(localStorage.getItem('portfolio-gh'))}catch(e){return null}},up={},hd={};
 const catLi=c=>`<li><a href="#/${encodeURIComponent(c)}" data-c="${c}">${c}</a><span class="n"></span><b class="x" data-act="rmcat">Togli</b></li>`;
 const toast=m=>{const e=$('#ts');e.textContent=m;e.classList.add('on');setTimeout(()=>e.classList.remove('on'),4000)};
 
@@ -25,7 +26,7 @@ function setEdit(on){
   $('#tg').textContent=on?'Fine modifiche':'Modifica';
   if(!on)save();
 }
-if(/edit/.test(location.search))H.classList.add('admin');
+if(gh()){H.classList.add('admin');setEdit(true)}
 
 /* scelta immagine, ridimensionata per non appesantire il sito */
 function pick(cb,multi){
@@ -76,9 +77,14 @@ document.addEventListener('click',e=>{
     else if(k==='cat'){const u=prompt('Categoria del progetto (es. Grafica, Video, Motion)',c.dataset.cat||'');if(u!==null){c.dataset.cat=u.trim();route();save()}}
     else if(k==='prv'){const u=prompt('Percorso di una clip breve (mp4) che parte al passaggio del mouse, es. /anteprime/logo.mp4. Vuoto per toglierla.',c.dataset.pv||'');if(u!==null){u.trim()?c.dataset.pv=u.trim():c.removeAttribute('data-pv');save()}}
     else if(k==='ba'){c.toggleAttribute('data-ba');toast(c.hasAttribute('data-ba')?'Prima e dopo attivo: la copertina è il "prima", la prima immagine della galleria è il "dopo".':'Prima e dopo disattivato.');save()}
-    else if(k==='reel'){const v=$('.reel'),u=prompt('Percorso del file video (mp4 o webm), es. /showreel.mp4. Vuoto per toglierlo.',v.getAttribute('src')||'');if(u!==null){if(u.trim()){v.src=u.trim();v.play().catch(()=>{})}else v.removeAttribute('src');save()}}
+    else if(k==='reel'){const v=$('.reel');if(confirm('Showreel: vuoi caricare un video dal computer?\nOK = scegli il file, Annulla = scrivi un link o un percorso')){vpick(f=>{const p='/showreel.'+(f.name.split('.').pop()||'mp4').toLowerCase(),bu=URL.createObjectURL(f);up[bu]={p,f};v.src=bu;v.play().catch(()=>{});save()});return}const u=prompt('Percorso del file video (mp4 o webm), es. /showreel.mp4. Vuoto per toglierlo.',v.getAttribute('src')||'');if(u!==null){if(u.trim()){v.src=u.trim();v.play().catch(()=>{})}else v.removeAttribute('src');save()}}
     else if(k==='addcat'){const u=(prompt('Nome della nuova categoria (es. Fotografia)')||'').replace(/[<>&"\/]/g,'').trim();if(u&&!$$('#cats a').some(x=>x.dataset.c===u)){$('#cats').insertAdjacentHTML('beforeend',catLi(u));fl();save()}}
     else if(k==='rmcat'){const l=a.closest('li'),nm=$('a',l).dataset.c;if(confirm(`Eliminare la categoria "${nm}" e tutti i suoi progetti?`)){$$('.card').filter(x=>x.dataset.cat===nm).forEach(x=>x.remove());l.remove();save()}}
+    else if(k==='login'){const r=prompt('Nome del repository GitHub, nel formato utente/repository (es. mattiaagostoni/portfolio)',(gh()||{}).repo||'');if(!r)return;const t=prompt('Incolla qui il token di GitHub (resta solo in questo browser)');if(!t)return;localStorage.setItem('portfolio-gh',JSON.stringify({repo:r.trim(),token:t.trim()}));location.reload()}
+    else if(k==='out'){if(confirm("Uscire dall'editor? Per modificare dovrai reinserire il token.")){localStorage.removeItem('portfolio-gh');location.reload()}}
+    else if(k==='pub')pub();
+    else if(k==='nfoto'){const ct=tcat();if(!ct)return;let cd=null;pick(s=>{if(!cd){$('#grid').insertAdjacentHTML('beforeend',card(ct));cd=$('#grid').lastElementChild;$('.media img',cd).src=s;toast(`Progetto aggiunto in "${ct}"`)}else $('.gal',cd).insertAdjacentHTML('beforeend',`<img src="${s}" alt="">`);fl();setEdit(true);save()},1)}
+    else if(k==='nvideo'){const ct=tcat();if(!ct)return;vpick(f=>{const p='/video/'+f.name.toLowerCase().replace(/[^a-z0-9.]+/g,'-'),bu=URL.createObjectURL(f);up[bu]={p,f};$('#grid').insertAdjacentHTML('beforeend',card(ct));const cd=$('#grid').lastElementChild;cd.dataset.video=bu;$('h3',cd).textContent=f.name.replace(/\.[^.]+$/,'').replace(/[-_]+/g,' ');frame(f,s=>{$('.media img',cd).src=s;save()});fl();setEdit(true);save();toast(`Video aggiunto in "${ct}"`)})}
     else if(k==='film')document.body.classList.toggle('film');
     else if(k==='prev')show(n-1);
     else if(k==='next')show(n+1);
@@ -134,6 +140,67 @@ document.addEventListener('mouseout',e=>{
   if(m&&!m.contains(e.relatedTarget))$$('.pv',m).forEach(v=>v.remove());
 });
 addEventListener('scroll',()=>{$('#pg').style.width=scrollY/Math.max(1,document.body.scrollHeight-innerHeight)*100+'%'});
+
+/* aggiunta contenuti e pubblicazione su GitHub */
+function vpick(cb){
+  const i=document.createElement('input');i.type='file';i.accept='video/*';
+  i.onchange=()=>{const f=i.files[0];if(!f)return;if(f.size>50e6)return toast('Video troppo pesante (massimo 50 MB): comprimilo prima di caricarlo.');cb(f)};
+  i.click();
+}
+function frame(f,cb){
+  const v=document.createElement('video');v.muted=true;v.preload='auto';v.src=URL.createObjectURL(f);
+  v.onloadeddata=()=>{v.currentTime=Math.min(1,(v.duration||2)/2)};
+  v.onseeked=()=>{const c=document.createElement('canvas');c.width=640;c.height=Math.round(640*v.videoHeight/v.videoWidth);c.getContext('2d').drawImage(v,0,0,c.width,c.height);cb(c.toDataURL('image/jpeg',.8))};
+}
+function tcat(){
+  const c=cc();if(c)return c;
+  const l=$$('#cats a').map(x=>x.dataset.c);
+  const u=(prompt('In quale categoria? Scrivi il nome ('+l.join(', ')+') oppure uno nuovo.',l[0]||'')||'').replace(/[<>&"\/]/g,'').trim();
+  if(!u)return null;
+  if(!l.includes(u))$('#cats').insertAdjacentHTML('beforeend',catLi(u));
+  return u;
+}
+async function api(p,o={}){
+  const g=gh(),r=await fetch('https://api.github.com/repos/'+g.repo+p,{...o,headers:{Authorization:'Bearer '+g.token,Accept:'application/vnd.github+json','Content-Type':'application/json'}});
+  if(!r.ok)throw new Error(r.status+' '+(await r.text()).slice(0,140));
+  return r.json();
+}
+const b64=f=>new Promise(ok=>{const r=new FileReader();r.onload=()=>ok(r.result.split(',')[1]);r.readAsDataURL(f)});
+const blob=c=>api('/git/blobs',{method:'POST',body:JSON.stringify(c)}).then(x=>x.sha);
+async function pub(){
+  if(!gh())return;
+  if(!confirm('Pubblicare le modifiche sul sito? Saranno online tra circa un minuto.'))return;
+  const w=edit,ad=H.classList.contains('admin'),fm=document.body.classList.contains('film');
+  setEdit(false);toast('Pubblico... non chiudere la pagina');
+  try{
+    $('#fs').textContent='';H.classList.remove('admin');document.body.classList.remove('film');
+    let html='<!DOCTYPE html>\n'+H.outerHTML;
+    H.classList.add('admin');if(fm)document.body.classList.add('film');
+    html=html.replace(/(<div id="(?:wp|fp|lb|ts)") class="(?:go|on)"/g,'$1');
+    const files=[],mk=[];let i=0;
+    for(const u of new Set(html.match(/data:image\/[a-z+]+;base64,[A-Za-z0-9+\/=]+/g)||[])){
+      const p=hd[u]||('immagini/'+Date.now()+'-'+(i++)+(u.startsWith('data:image/png')?'.png':'.jpg'));
+      if(!hd[u]){files.push([p,u.split(',')[1]]);mk.push(()=>hd[u]=p)}
+      html=html.split(u).join('/'+p);
+    }
+    for(const [bu,o] of Object.entries(up)){
+      if(!html.includes(bu))continue;
+      html=html.split(bu).join(o.p);
+      if(!o.d){files.push([o.p.slice(1),await b64(o.f)]);mk.push(()=>o.d=1)}
+    }
+    const b=(await api('')).default_branch,ref=(await api('/git/ref/heads/'+b)).object.sha,cm=await api('/git/commits/'+ref);
+    const tree=[];
+    for(const [p,c] of files)tree.push({path:p,mode:'100644',type:'blob',sha:await blob({content:c,encoding:'base64'})});
+    tree.push({path:'index.html',mode:'100644',type:'blob',sha:await blob({content:html,encoding:'utf-8'})});
+    const nt=await api('/git/trees',{method:'POST',body:JSON.stringify({base_tree:cm.tree.sha,tree})});
+    const nc=await api('/git/commits',{method:'POST',body:JSON.stringify({message:'Aggiornamento portfolio',tree:nt.sha,parents:[ref]})});
+    await api('/git/refs/heads/'+b,{method:'PATCH',body:JSON.stringify({sha:nc.sha})});
+    mk.forEach(f=>f());try{localStorage.removeItem(K)}catch(e){}
+    toast('Pubblicato! Il sito online si aggiorna tra circa un minuto.');
+  }catch(err){H.classList.add('admin');toast('Errore nella pubblicazione: '+err.message)}
+  if(w)setEdit(true);
+}
+addEventListener('beforeunload',e=>{if(Object.values(up).some(o=>!o.d))e.preventDefault()});
 
 /* pagine per categoria, con transizione */
 const cc=()=>{try{const h=decodeURIComponent(location.hash.slice(1));return h[0]==='/'?h.slice(1):''}catch(e){return ''}};

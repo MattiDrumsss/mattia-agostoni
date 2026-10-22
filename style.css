@@ -144,3 +144,10 @@ body.film .card{flex:0 0 min(78vw,440px);scroll-snap-align:start;margin-top:0}
 @media(hover:none){#cu{display:none}}
 @media(max-width:720px){.ab{grid-template-columns:1fr}.card:nth-child(3n+2){margin-top:0}.nav nav{gap:16px}.row{flex-direction:column;align-items:start}}
 @media(prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important;scroll-behavior:auto!important}}
+
+#bar button{background:none;color:var(--w);border:1px solid #666}
+#bar button:hover{background:#222}
+#bar [data-act=pub]{background:var(--w);color:var(--k);border-color:var(--w)}
+#bar [data-act=pub]:hover{background:#cfcfcf}
+.lk{background:none;color:var(--g);padding:0;font-weight:400;font-size:.85rem}
+.lk:hover{background:none;color:var(--w)}
