@@ -1,10 +1,11 @@
 const $=(s,r=document)=>r.querySelector(s),$$=(s,r=document)=>[...r.querySelectorAll(s)];
 const root=$('#root'),K='portfolio-v3',H=document.documentElement;
-let edit=false,t,n=0,LB=[];
+let edit=false,t,n=0,LB=[],se=null;
 
 const card=(c='')=>`<article class="card" data-cat="${c}"><div class="media" data-img><img alt=""></div><div class="gal"></div><div class="meta"><h3 data-e>Titolo progetto</h3><p data-e>Descrizione breve, anno</p></div><div class="tl"><button data-act="img">Immagini</button><button data-act="cat">Categoria</button><button data-act="vid">Video</button><button data-act="prv">Anteprima</button><button data-act="ba">Prima e dopo</button><button data-act="del">Elimina</button></div></article>`;
 const li=(a,b)=>`<li><span data-e>${a}</span>${b?`<a data-e data-l href="#">${b}</a>`:''}<b class="x" data-act="rm">Togli</b></li>`;
 const gh=()=>{try{return JSON.parse(localStorage.getItem('portfolio-gh'))}catch(e){return null}},up={},hd={};
+const sk=(a,p)=>`<li><span data-e>${a}</span><span class="bar"><i style="--p:${p/100}"></i></span><b class="pc">${p}%</b><input class="rg" type="range" min="0" max="100" value="${p}" aria-label="Percentuale della competenza"><b class="x" data-act="rm">Togli</b></li>`;
 const catLi=c=>`<li><a href="#/${encodeURIComponent(c)}" data-c="${c}">${c}</a><span class="n"></span><b class="x" data-act="rmcat">Togli</b></li>`;
 const toast=m=>{const e=$('#ts');e.textContent=m;e.classList.add('on');setTimeout(()=>e.classList.remove('on'),4000)};
 
@@ -14,17 +15,18 @@ try{const s=localStorage.getItem(K);if(s){root.innerHTML=s;saved=true}}catch(e){
 if(!saved&&!root.dataset.init){
   $('#grid').innerHTML=card('Grafica')+card('Video')+card('Motion');
   $('#cats').innerHTML=['Grafica','Video','Motion'].map(catLi).join('');
-  $('#sk').innerHTML=['Identità visiva','Editoria e impaginazione','Video editing','Motion graphics'].map(x=>li(x)).join('');
+  $('#sk').innerHTML=[['Identità visiva',90],['Editoria e impaginazione',85],['Video editing',80],['Motion graphics',70]].map(x=>sk(...x)).join('');
   $('#ct').innerHTML=li('Instagram','@tuonome')+li('Behance','behance.net/tuonome');
   root.dataset.init=1;
 }
+$$('#sk li').forEach(l=>{if(!$('.bar',l))l.outerHTML=sk($('span',l).textContent,80)});
 
-const save=()=>{try{localStorage.setItem(K,root.innerHTML.replace(/ contenteditable="true"/g,'').replace(/<video class="pv"[^>]*><\/video>/g,''))}catch(e){toast('Memoria del browser piena: premi "Scarica index.html" per non perdere le modifiche.')}};
+const save=()=>{try{localStorage.setItem(K,root.innerHTML.replace(/ contenteditable="true"/g,'').replace(/<video class="pv"[^>]*><\/video>/g,'').replace(/ class="sel"/g,'').replace(/ sel"/g,'"'))}catch(e){toast('Memoria del browser piena: premi "Scarica index.html" per non perdere le modifiche.')}};
 function setEdit(on){
   edit=on;document.body.classList.toggle('edit',on);
   $$('[data-e]').forEach(e=>on?e.setAttribute('contenteditable','true'):e.removeAttribute('contenteditable'));
   $('#tg').textContent=on?'Fine modifiche':'Modifica';
-  if(!on)save();
+  if(!on){$$('.sel').forEach(x=>x.classList.remove('sel'));se=null;save()}
 }
 if(gh()){H.classList.add('admin');setEdit(true)}
 
@@ -69,7 +71,7 @@ document.addEventListener('click',e=>{
     else if(k==='add'){$('#grid').insertAdjacentHTML('beforeend',card(cc()));fl();setEdit(edit);save()}
     else if(k==='del'){if(confirm('Eliminare questo progetto?')){c.remove();fl();save()}}
     else if(k==='vid'){const u=prompt('Link YouTube o Vimeo, oppure percorso di un file video (es. /video/reel.mp4). Lascia vuoto per togliere il video.',c.dataset.video||'');if(u!==null){u.trim()?c.dataset.video=u.trim():c.removeAttribute('data-video');save()}}
-    else if(k==='addsk'){$('#sk').insertAdjacentHTML('beforeend',li('Nuova competenza'));setEdit(edit);save()}
+    else if(k==='addsk'){$('#sk').insertAdjacentHTML('beforeend',sk('Nuova competenza',70));setEdit(edit);save()}
     else if(k==='addct'){$('#ct').insertAdjacentHTML('beforeend',li('Etichetta','link'));setEdit(edit);save()}
     else if(k==='rm'){a.parentNode.remove();save()}
     else if(k==='inv'){$('.logo img').classList.toggle('iv');save()}
@@ -80,6 +82,7 @@ document.addEventListener('click',e=>{
     else if(k==='reel'){const v=$('.reel');if(confirm('Showreel: vuoi caricare un video dal computer?\nOK = scegli il file, Annulla = scrivi un link o un percorso')){vpick(f=>{const p='/showreel.'+(f.name.split('.').pop()||'mp4').toLowerCase(),bu=URL.createObjectURL(f);up[bu]={p,f};v.src=bu;v.play().catch(()=>{});save()});return}const u=prompt('Percorso del file video (mp4 o webm), es. /showreel.mp4. Vuoto per toglierlo.',v.getAttribute('src')||'');if(u!==null){if(u.trim()){v.src=u.trim();v.play().catch(()=>{})}else v.removeAttribute('src');save()}}
     else if(k==='addcat'){const u=(prompt('Nome della nuova categoria (es. Fotografia)')||'').replace(/[<>&"\/]/g,'').trim();if(u&&!$$('#cats a').some(x=>x.dataset.c===u)){$('#cats').insertAdjacentHTML('beforeend',catLi(u));fl();save()}}
     else if(k==='rmcat'){const l=a.closest('li'),nm=$('a',l).dataset.c;if(confirm(`Eliminare la categoria "${nm}" e tutti i suoi progetti?`)){$$('.card').filter(x=>x.dataset.cat===nm).forEach(x=>x.remove());l.remove();save()}}
+    else if(k==='tm'||k==='tp'){if(!se||!se.isConnected)return toast('Clicca prima sul testo che vuoi ingrandire o ridurre.');const z=Math.min(3,Math.max(.4,Math.round(((parseFloat(se.style.zoom)||1)+(k==='tp'?.1:-.1))*100)/100));se.style.zoom=z;toast('Dimensione del testo: '+Math.round(z*100)+'%');save()}
     else if(k==='login'){const r=prompt('Nome del repository GitHub, nel formato utente/repository (es. mattiaagostoni/portfolio)',(gh()||{}).repo||'');if(!r)return;const t=prompt('Incolla qui il token di GitHub (resta solo in questo browser)');if(!t)return;localStorage.setItem('portfolio-gh',JSON.stringify({repo:r.trim(),token:t.trim()}));location.reload()}
     else if(k==='out'){if(confirm("Uscire dall'editor? Per modificare dovrai reinserire il token.")){localStorage.removeItem('portfolio-gh');location.reload()}}
     else if(k==='pub')pub();
@@ -176,7 +179,7 @@ async function pub(){
     $('#fs').textContent='';H.classList.remove('admin');document.body.classList.remove('film');
     let html='<!DOCTYPE html>\n'+H.outerHTML;
     H.classList.add('admin');if(fm)document.body.classList.add('film');
-    html=html.replace(/(<div id="(?:wp|fp|lb|ts)") class="(?:go|on)"/g,'$1');
+    html=html.replace(/(<div id="(?:wp|fp|lb|ts)") class="(?:go|on)"/g,'$1').replace(/ class="sel"/g,'').replace(/ sel"/g,'"');
     const files=[],mk=[];let i=0;
     for(const u of new Set(html.match(/data:image\/[a-z+]+;base64,[A-Za-z0-9+\/=]+/g)||[])){
       const p=hd[u]||('immagini/'+Date.now()+'-'+(i++)+(u.startsWith('data:image/png')?'.png':'.jpg'));
@@ -201,6 +204,16 @@ async function pub(){
   if(w)setEdit(true);
 }
 addEventListener('beforeunload',e=>{if(Object.values(up).some(o=>!o.d))e.preventDefault()});
+
+document.addEventListener('focusin',e=>{
+  const x=e.target.closest&&e.target.closest('[data-e]');
+  if(x&&edit){$$('.sel').forEach(y=>y.classList.remove('sel'));x.classList.add('sel');se=x}
+});
+document.addEventListener('input',e=>{
+  if(!e.target.matches('.rg'))return;
+  const l=e.target.closest('li'),v=e.target.value;
+  $('.bar i',l).style.setProperty('--p',v/100);$('.pc',l).textContent=v+'%';e.target.setAttribute('value',v);
+});
 
 /* pagine per categoria, con transizione */
 const cc=()=>{try{const h=decodeURIComponent(location.hash.slice(1));return h[0]==='/'?h.slice(1):''}catch(e){return ''}};
