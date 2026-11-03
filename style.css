@@ -200,3 +200,4 @@ body.edit .sel{outline:2px solid currentColor}
 #mx{background:none;color:#fff;border:1px solid #444}
 body.edit .media:not(:has(img[src]))::before{content:"+ Copertina";opacity:1}
 div.mail:hover{color:inherit;-webkit-text-stroke:0}
+.mn>div{max-height:60vh;overflow:auto}
