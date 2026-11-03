@@ -32,6 +32,7 @@ const BAR=`<div id="bar">
   <span class="tz"><button data-act="tm" title="Riduci il testo selezionato">A−</button><button data-act="tp" title="Ingrandisci il testo selezionato">A+</button></span>
   <button class="pb" data-act="pub">Pubblica</button>
   <details class="mn"><summary>⋯</summary><div>
+    <button data-act="ico">Logo nella scheda del browser</button>
     <button data-act="rs">Annulla modifiche</button>
     <button data-act="out">Esci</button>
   </div></details>
@@ -91,6 +92,18 @@ document.addEventListener('click',e=>{
     else if(k==='add'){$('#grid').insertAdjacentHTML('beforeend',card(cc()));fl();setEdit(edit);save()}
     else if(k==='del'){if(confirm('Eliminare questo progetto?')){c.remove();fl();save()}}
     else if(k==='vid'){ask('Link YouTube o Vimeo del video (lascia vuoto per togliere il video)',c.dataset.video||'').then(u=>{if(u!==null){u.trim()?c.dataset.video=u.trim():c.removeAttribute('data-video');save()}})}
+    else if(k==='ico'){
+      const go=s=>{const im=new Image();im.onload=()=>{
+        const c2=document.createElement('canvas');c2.width=c2.height=256;
+        const z=Math.min(256/im.width,256/im.height),w=im.width*z,h=im.height*z;
+        c2.getContext('2d').drawImage(im,(256-w)/2,(256-h)/2,w,h);
+        const u=c2.toDataURL('image/png');
+        $$('link[rel~=icon],link[rel=apple-touch-icon]').forEach(x=>x.remove());
+        document.head.insertAdjacentHTML('beforeend',`<link rel="icon" type="image/png" href="${u}"><link rel="apple-touch-icon" href="${u}">`);
+        toast('Logo impostato: guarda la scheda del browser. Poi premi Pubblica.',7000)};im.src=s};
+      const L=$('.logo img');
+      if(L&&L.getAttribute('src')&&confirm('Vuoi usare il logo che hai già messo in alto a sinistra?\nOK = sì, Annulla = scegli un altro file'))go(L.src);else pick(go);
+    }
     else if(k==='cover'){pick(s=>{$('.media img',c).src=s;save();toast('Copertina aggiornata. Premi Pubblica per metterla online.',5000)})}
     else if(k==='vfile'){vpick(f=>{const p='/video/'+f.name.toLowerCase().replace(/[^a-z0-9.]+/g,'-'),bu=URL.createObjectURL(f);up[bu]={p,f};c.dataset.video=bu;if(!$('.media img',c).getAttribute('src'))frame(f,s=>{$('.media img',c).src=s;save()});save();toast('Video aggiunto al progetto. Ricorda di premere Pubblica.',6000)})}
     else if(k==='addsk'){$('#sk').insertAdjacentHTML('beforeend',sk('Nuova competenza',70));setEdit(edit);save()}
