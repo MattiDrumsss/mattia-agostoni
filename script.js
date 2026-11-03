@@ -7,21 +7,24 @@ const card=(c='')=>`<article class="card" data-cat="${c}"><div class="media" dat
 const li=(a,b)=>`<li><span data-e>${a}</span>${b?`<a data-e data-l href="#">${b}</a>`:''}<b class="x" data-act="rm">Togli</b></li>`;
 const gh=()=>{try{return JSON.parse(localStorage.getItem('portfolio-gh'))}catch(e){return null}},up={},hd={};
 const sk=(a,p)=>`<li><span data-e>${a}</span><span class="bar"><i style="--p:${p/100}"></i></span><b class="pc">${p}%</b><input class="rg" type="range" min="0" max="100" value="${p}" aria-label="Percentuale della competenza"><b class="x" data-act="rm">Togli</b></li>`;
-const catLi=c=>`<li><a href="#/${encodeURIComponent(c)}" data-c="${c}">${c}</a><span class="n"></span><b class="x" data-act="rmcat">Togli</b></li>`;
+const catLi=c=>`<li><a href="#/${encodeURIComponent(c)}" data-c="${c}">${c}</a><span class="n"></span><b class="x" data-act="rncat">Rinomina</b><b class="x" data-act="rmcat">Togli</b></li>`;
 const toast=(m,d=4000)=>{const e=$('#ts');e.textContent=m;e.classList.add('on');setTimeout(()=>e.classList.remove('on'),d)};
 
 /* carica contenuto salvato nel browser, oppure quello di partenza */
 let saved=false;
 try{const s=localStorage.getItem(K);if(s){root.innerHTML=s;saved=true}}catch(e){}
 if(!saved&&!root.dataset.init&&!$('#cats').children.length&&!$('#grid').children.length){
-  $('#grid').innerHTML=card('Grafica')+card('Video')+card('Motion');
-  $('#cats').innerHTML=['Grafica','Video','Motion'].map(catLi).join('');
+  $('#grid').innerHTML=card('Grafica')+card('Video')+card('Fotografia');
+  $('#cats').innerHTML=['Grafica','Video','Fotografia'].map(catLi).join('');
   $('#sk').innerHTML=[['Identità visiva',90],['Editoria e impaginazione',85],['Video editing',80],['Motion graphics',70]].map(x=>sk(...x)).join('');
   $('#ct').innerHTML=li('Instagram','@tuonome')+li('Behance','behance.net/tuonome');
   root.dataset.init=1;
 }
 $$('#sk li').forEach(l=>{if(!$('.bar',l))l.outerHTML=sk($('span',l).textContent,80)});
 $$('.card .tl').forEach(t=>t.innerHTML=TL);
+$('#lb').innerHTML=`<button class="lbx" data-act="close" aria-label="Chiudi"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button><div id="lbc"></div><div id="lbn"><button class="lbp" data-act="prev" aria-label="Foto precedente"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg></button><span id="lbs"></span><button class="lbq" data-act="next" aria-label="Foto successiva"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5l7 7-7 7"/></svg></button></div>`;
+$$('#cats li').forEach(l=>{const d=$('[data-act=rmcat]',l);if(d&&!$('[data-act=rncat]',l))d.insertAdjacentHTML('beforebegin','<b class="x" data-act="rncat">Rinomina</b>')});
+if(!root.dataset.m1){renCat('Motion','Fotografia');root.dataset.m1=1}
 const BAR=`<div id="bar">
   <button id="tg" class="sw" data-act="tg"><i></i><span>Modifica</span></button>
   <details class="mn"><summary>+ Aggiungi</summary><div>
@@ -29,6 +32,7 @@ const BAR=`<div id="bar">
     <button data-act="nvideo">Video</button>
     <button data-act="addcat">Categoria</button>
   </div></details>
+  <button data-act="imp" title="Sistema i progetti della pagina senza buchi">Impagina</button>
   <span class="tz"><button data-act="tm" title="Riduci il testo selezionato">A−</button><button data-act="tp" title="Ingrandisci il testo selezionato">A+</button></span>
   <span class="tz"><button data-act="fb" title="Grassetto"><b>B</b></button><button data-act="fi" title="Corsivo"><i>I</i></button><button data-act="fu" title="Sottolineato"><u>U</u></button></span>
   <details class="mn"><summary>Link</summary><div>
@@ -109,6 +113,8 @@ document.addEventListener('click',e=>{
       const L=$('.logo img');
       if(L&&L.getAttribute('src')&&confirm('Vuoi usare il logo che hai già messo in alto a sinistra?\nOK = sì, Annulla = scegli un altro file'))go(L.src);else pick(go);
     }
+    else if(k==='imp'){const c0=cc();if(!c0){toast('Apri prima una categoria: l\'impaginazione si imposta pagina per pagina.',5000);return}const A=$$('#cats a').find(x=>x.dataset.c===c0);if(!A)return;A.toggleAttribute('data-lay');applyLay();save();toast(A.hasAttribute('data-lay')?'Impaginazione compatta attivata: niente buchi tra i progetti. Premi Pubblica per metterla online.':'Impaginazione compatta disattivata.',6000)}
+    else if(k==='rncat'){const old=$('a',a.closest('li')).dataset.c;ask('Nuovo nome della categoria',old).then(v=>{const u=(v||'').replace(/[<>&"\/]/g,'').trim();if(u&&u!==old&&renCat(old,u)){fl();save();toast('Categoria rinominata in '+u+'. Premi Pubblica per metterla online.',5000)}})}
     else if(k==='ar'){const m=$('.media',c);if(a.dataset.v)m.style.aspectRatio=a.dataset.v;else m.style.removeProperty('aspect-ratio');save();toast('Formato cambiato. Premi Pubblica per metterlo online.',4000)}
     else if(k==='fb'||k==='fi'||k==='fu'){fmt({fb:'bold',fi:'italic',fu:'underline'}[k])}
     else if(k==='lk')setLink();
@@ -138,6 +144,7 @@ document.addEventListener('click',e=>{
     else if(k==='close'){$('#lb').classList.remove('on');$('#lbc').innerHTML=''}
     return;
   }
+  if(!edit&&T.closest('.logo')){if(cc())location.hash='#/';else scrollTo({top:0,behavior:'smooth'});return}
   const im=T.closest('[data-img]');
   if(edit&&im){pick(s=>{$('img',im).src=s;save()});return}
   const m=T.closest('.media');
@@ -187,6 +194,32 @@ document.addEventListener('mouseout',e=>{
   if(m&&!m.contains(e.relatedTarget))$$('.pv',m).forEach(v=>v.remove());
 });
 addEventListener('scroll',()=>{$('#pg').style.width=scrollY/Math.max(1,document.body.scrollHeight-innerHeight)*100+'%'});
+
+/* impaginazione compatta e rinomina categorie */
+function renCat(old,u){
+  const A=$$('#cats a').find(x=>x.dataset.c===old);
+  if(!A||$$('#cats a').some(x=>x.dataset.c===u))return false;
+  A.dataset.c=u;A.textContent=u;A.href='#/'+encodeURIComponent(u);
+  $$('.card').filter(x=>x.dataset.cat===old).forEach(x=>x.dataset.cat=u);
+  return true;
+}
+let lt;
+const ro=new ResizeObserver(()=>{cancelAnimationFrame(lt);lt=requestAnimationFrame(lay)});
+function lay(){
+  const g=$('#grid'),on=g.classList.contains('dense')&&!document.body.classList.contains('film');
+  $$('.card',g).forEach(c=>{
+    ro.observe(c);
+    if(on&&c.offsetHeight)c.style.gridRowEnd='span '+Math.ceil((c.offsetHeight+44)/8);
+    else c.style.removeProperty('grid-row-end');
+  });
+  ro.observe(g);
+}
+function applyLay(){
+  const c=cc(),A=$$('#cats a').find(x=>x.dataset.c===c);
+  $('#grid').classList.toggle('dense',!!(A&&A.hasAttribute('data-lay')));
+  requestAnimationFrame(lay);
+}
+new MutationObserver(()=>{cancelAnimationFrame(lt);lt=requestAnimationFrame(lay)}).observe($('#grid'),{childList:true});
 
 /* formattazione del testo e link */
 document.addEventListener('mousedown',e=>{if(e.target.closest('#bar'))e.preventDefault()});
@@ -278,7 +311,7 @@ async function pub(){
     $('#fs').textContent='';H.classList.remove('admin');document.body.classList.remove('film');
     let html='<!DOCTYPE html>\n'+H.outerHTML;
     H.classList.add('admin');if(fm)document.body.classList.add('film');
-    html=html.replace(/(<div id="(?:wp|fp|lb|ts|md)") class="(?:go|on)"/g,'$1').replace(/ class="sel"/g,'').replace(/ sel"/g,'"');
+    html=html.replace(/(<div id="(?:wp|fp|lb|ts|md)") class="(?:go|on)"/g,'$1').replace(/ class="sel"/g,'').replace(/ sel"/g,'"').replace(/^(<!DOCTYPE html>\n<html[^>]*?) style="[^"]*"/,'$1');
     const files=[],mk=[];let i=0;
     for(const u of new Set(html.match(/data:image\/[a-z+]+;base64,[A-Za-z0-9+\/=]+/g)||[])){
       const p=hd[u]||('immagini/'+Date.now()+'-'+(i++)+(u.startsWith('data:image/png')?'.png':'.jpg'));
@@ -330,6 +363,7 @@ function fl(){
 function route(){
   const c=cc(),h=location.hash.slice(1);
   document.body.classList.toggle('pg',!!c);
+  applyLay();
   $('#fs').textContent=c?`.card:not([data-cat=${JSON.stringify(c)}]){display:none}`:'';
   if(c)$('#lavori h2').textContent=c;
   fl();
@@ -353,8 +387,17 @@ route();
 
 /* cursore: piccolo punto, cerchio che inverte i colori sul nome */
 const cu=$('#cu'),fp=$('#fp');
+let mx=-99,my=-99,cx=-99,cy=-99;
+(function tick(){cx+=(mx-cx)*.22;cy+=(my-cy)*.22;cu.style.left=cx+'px';cu.style.top=cy+'px';requestAnimationFrame(tick)})();
+document.addEventListener('mousemove',e=>{
+  const m=e.target.closest&&e.target.closest('.row a,.f');if(!m)return;
+  const r=m.getBoundingClientRect();
+  H.style.setProperty('--mx',(e.clientX-r.left-r.width/2)*.22+'px');
+  H.style.setProperty('--my',(e.clientY-r.top-r.height/2)*.3+'px');
+});
+addEventListener('scroll',()=>{if(scrollY<innerHeight*1.2)H.style.setProperty('--sy',scrollY*.18+'px')},{passive:true});
 addEventListener('mousemove',e=>{
-  cu.style.left=e.clientX+'px';cu.style.top=e.clientY+'px';fp.style.transform=`translate(${e.clientX+36}px,${e.clientY-150}px) rotate(-4deg)`;
+  mx=e.clientX;my=e.clientY;fp.style.transform=`translate(${e.clientX+36}px,${e.clientY-150}px) rotate(-4deg)`;
   const x=e.target;
   cu.classList.toggle('s',!!x.closest('h1'));
   cu.classList.toggle('h',!x.closest('h1')&&!!x.closest('a,button,.media,[data-img]'));
