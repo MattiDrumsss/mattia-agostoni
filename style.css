@@ -198,3 +198,4 @@ body.edit .sel{outline:2px solid currentColor}
 #mf div{display:flex;gap:8px;justify-content:flex-end}
 #mf button{border-radius:99px;padding:10px 20px}
 #mx{background:none;color:#fff;border:1px solid #444}
+body.edit .media:not(:has(img[src]))::before{content:"+ Copertina";opacity:1}

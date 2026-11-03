@@ -2,7 +2,7 @@ const $=(s,r=document)=>r.querySelector(s),$$=(s,r=document)=>[...r.querySelecto
 const root=$('#root'),K='portfolio-v3',H=document.documentElement;
 let edit=false,t,n=0,LB=[],se=null;
 
-const TL=`<button data-act="img">Foto</button><details class="mn"><summary>Video</summary><div><button data-act="vfile">Carica un file</button><button data-act="vid">Incolla un link</button></div></details><details class="mn"><summary>Altro</summary><div><button data-act="cat">Cambia categoria</button><button data-act="prv">Anteprima al passaggio</button><button data-act="ba">Prima e dopo</button><button data-act="del">Elimina progetto</button></div></details>`;
+const TL=`<button data-act="cover">Copertina</button><button data-act="img">Galleria</button><details class="mn"><summary>Video</summary><div><button data-act="vfile">Carica un file</button><button data-act="vid">Incolla un link</button></div></details><details class="mn"><summary>Altro</summary><div><button data-act="cat">Cambia categoria</button><button data-act="prv">Anteprima al passaggio</button><button data-act="ba">Prima e dopo</button><button data-act="del">Elimina progetto</button></div></details>`;
 const card=(c='')=>`<article class="card" data-cat="${c}"><div class="media" data-img><img alt=""></div><div class="gal"></div><div class="meta"><h3 data-e>Titolo progetto</h3><p data-e>Descrizione breve, anno</p></div><div class="tl">${TL}</div></article>`;
 const li=(a,b)=>`<li><span data-e>${a}</span>${b?`<a data-e data-l href="#">${b}</a>`:''}<b class="x" data-act="rm">Togli</b></li>`;
 const gh=()=>{try{return JSON.parse(localStorage.getItem('portfolio-gh'))}catch(e){return null}},up={},hd={};
@@ -91,6 +91,7 @@ document.addEventListener('click',e=>{
     else if(k==='add'){$('#grid').insertAdjacentHTML('beforeend',card(cc()));fl();setEdit(edit);save()}
     else if(k==='del'){if(confirm('Eliminare questo progetto?')){c.remove();fl();save()}}
     else if(k==='vid'){ask('Link YouTube o Vimeo del video (lascia vuoto per togliere il video)',c.dataset.video||'').then(u=>{if(u!==null){u.trim()?c.dataset.video=u.trim():c.removeAttribute('data-video');save()}})}
+    else if(k==='cover'){pick(s=>{$('.media img',c).src=s;save();toast('Copertina aggiornata. Premi Pubblica per metterla online.',5000)})}
     else if(k==='vfile'){vpick(f=>{const p='/video/'+f.name.toLowerCase().replace(/[^a-z0-9.]+/g,'-'),bu=URL.createObjectURL(f);up[bu]={p,f};c.dataset.video=bu;if(!$('.media img',c).getAttribute('src'))frame(f,s=>{$('.media img',c).src=s;save()});save();toast('Video aggiunto al progetto. Ricorda di premere Pubblica.',6000)})}
     else if(k==='addsk'){$('#sk').insertAdjacentHTML('beforeend',sk('Nuova competenza',70));setEdit(edit);save()}
     else if(k==='addct'){$('#ct').insertAdjacentHTML('beforeend',li('Etichetta','link'));setEdit(edit);save()}
