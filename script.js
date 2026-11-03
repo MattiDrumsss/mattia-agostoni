@@ -2,7 +2,8 @@ const $=(s,r=document)=>r.querySelector(s),$$=(s,r=document)=>[...r.querySelecto
 const root=$('#root'),K='portfolio-v3',H=document.documentElement;
 let edit=false,t,n=0,LB=[],se=null;
 
-const card=(c='')=>`<article class="card" data-cat="${c}"><div class="media" data-img><img alt=""></div><div class="gal"></div><div class="meta"><h3 data-e>Titolo progetto</h3><p data-e>Descrizione breve, anno</p></div><div class="tl"><button data-act="img">Immagini</button><button data-act="cat">Categoria</button><button data-act="vid">Video</button><button data-act="prv">Anteprima</button><button data-act="ba">Prima e dopo</button><button data-act="del">Elimina</button></div></article>`;
+const TL=`<button data-act="img">Foto</button><details class="mn"><summary>Video</summary><div><button data-act="vfile">Carica un file</button><button data-act="vid">Incolla un link</button></div></details><details class="mn"><summary>Altro</summary><div><button data-act="cat">Cambia categoria</button><button data-act="prv">Anteprima al passaggio</button><button data-act="ba">Prima e dopo</button><button data-act="del">Elimina progetto</button></div></details>`;
+const card=(c='')=>`<article class="card" data-cat="${c}"><div class="media" data-img><img alt=""></div><div class="gal"></div><div class="meta"><h3 data-e>Titolo progetto</h3><p data-e>Descrizione breve, anno</p></div><div class="tl">${TL}</div></article>`;
 const li=(a,b)=>`<li><span data-e>${a}</span>${b?`<a data-e data-l href="#">${b}</a>`:''}<b class="x" data-act="rm">Togli</b></li>`;
 const gh=()=>{try{return JSON.parse(localStorage.getItem('portfolio-gh'))}catch(e){return null}},up={},hd={};
 const sk=(a,p)=>`<li><span data-e>${a}</span><span class="bar"><i style="--p:${p/100}"></i></span><b class="pc">${p}%</b><input class="rg" type="range" min="0" max="100" value="${p}" aria-label="Percentuale della competenza"><b class="x" data-act="rm">Togli</b></li>`;
@@ -20,13 +21,29 @@ if(!saved&&!root.dataset.init&&!$('#cats').children.length&&!$('#grid').children
   root.dataset.init=1;
 }
 $$('#sk li').forEach(l=>{if(!$('.bar',l))l.outerHTML=sk($('span',l).textContent,80)});
+$$('.card .tl').forEach(t=>t.innerHTML=TL);
+const BAR=`<div id="bar">
+  <button id="tg" class="sw" data-act="tg"><i></i><span>Modifica</span></button>
+  <details class="mn"><summary>+ Aggiungi</summary><div>
+    <button data-act="nfoto">Foto</button>
+    <button data-act="nvideo">Video</button>
+    <button data-act="addcat">Categoria</button>
+  </div></details>
+  <span class="tz"><button data-act="tm" title="Riduci il testo selezionato">A−</button><button data-act="tp" title="Ingrandisci il testo selezionato">A+</button></span>
+  <button class="pb" data-act="pub">Pubblica</button>
+  <details class="mn"><summary>⋯</summary><div>
+    <button data-act="rs">Annulla modifiche</button>
+    <button data-act="out">Esci</button>
+  </div></details>
+</div>`;
+{const b=$('#bar');if(b)b.outerHTML=BAR;else document.body.insertAdjacentHTML('beforeend',BAR);if(!$('#md'))document.body.insertAdjacentHTML('beforeend',`<div id="md"><form id="mf"><h3 id="mt"></h3><input id="mi" autocomplete="off"><div><button type="button" id="mx">Annulla</button><button type="submit">OK</button></div></form></div>`)}
 root.dataset.init=1;
 
 const save=()=>{try{localStorage.setItem(K,root.innerHTML.replace(/ contenteditable="true"/g,'').replace(/<video class="pv"[^>]*><\/video>/g,'').replace(/ class="sel"/g,'').replace(/ sel"/g,'"'))}catch(e){toast('Memoria del browser piena: premi "Scarica index.html" per non perdere le modifiche.')}};
 function setEdit(on){
   edit=on;document.body.classList.toggle('edit',on);
   $$('[data-e]').forEach(e=>on?e.setAttribute('contenteditable','true'):e.removeAttribute('contenteditable'));
-  $('#tg').textContent=on?'Fine modifiche':'Modifica';
+  $('#tg').classList.toggle('on',on);
   if(!on){$$('.sel').forEach(x=>x.classList.remove('sel'));se=null;save()}
 }
 if(gh()){H.classList.add('admin');setEdit(true)}
@@ -60,31 +77,34 @@ function dl(){
 
 document.addEventListener('click',e=>{
   const T=e.target,l=T.closest('a');
+  $$('details.mn[open]').forEach(d=>{if(!d.contains(T))d.removeAttribute('open')});
   if(edit&&l&&l.hasAttribute('data-e'))e.preventDefault();
   const fb=T.closest('[data-f]');
   if(fb){$$('[data-f]').forEach(b=>b.classList.toggle('on',b===fb));$('#fs').textContent=fb.dataset.f==='Tutti'?'':`.card:not([data-cat=${JSON.stringify(fb.dataset.f)}]){display:none}`;return}
   const a=T.closest('[data-act]');
   if(a){
     const c=a.closest('.card'),k=a.dataset.act;
+    if(a.closest('details'))a.closest('details').removeAttribute('open');
     if(k==='tg')setEdit(!edit);
     else if(k==='dl')dl();
     else if(k==='rs'){if(confirm('Tornare alla versione del file? Le modifiche non scaricate andranno perse.')){try{localStorage.removeItem(K)}catch(x){}location.reload()}}
     else if(k==='add'){$('#grid').insertAdjacentHTML('beforeend',card(cc()));fl();setEdit(edit);save()}
     else if(k==='del'){if(confirm('Eliminare questo progetto?')){c.remove();fl();save()}}
-    else if(k==='vid'){const u=prompt('Link YouTube o Vimeo, oppure percorso di un file video (es. /video/reel.mp4). Lascia vuoto per togliere il video.',c.dataset.video||'');if(u!==null){u.trim()?c.dataset.video=u.trim():c.removeAttribute('data-video');save()}}
+    else if(k==='vid'){ask('Link YouTube o Vimeo del video (lascia vuoto per togliere il video)',c.dataset.video||'').then(u=>{if(u!==null){u.trim()?c.dataset.video=u.trim():c.removeAttribute('data-video');save()}})}
+    else if(k==='vfile'){vpick(f=>{const p='/video/'+f.name.toLowerCase().replace(/[^a-z0-9.]+/g,'-'),bu=URL.createObjectURL(f);up[bu]={p,f};c.dataset.video=bu;if(!$('.media img',c).getAttribute('src'))frame(f,s=>{$('.media img',c).src=s;save()});save();toast('Video aggiunto al progetto. Ricorda di premere Pubblica.',6000)})}
     else if(k==='addsk'){$('#sk').insertAdjacentHTML('beforeend',sk('Nuova competenza',70));setEdit(edit);save()}
     else if(k==='addct'){$('#ct').insertAdjacentHTML('beforeend',li('Etichetta','link'));setEdit(edit);save()}
     else if(k==='rm'){a.parentNode.remove();save()}
     else if(k==='inv'){$('.logo img').classList.toggle('iv');save()}
     else if(k==='img'){const g=$('.gal',c),n=$$('img',g).length;if(n&&!confirm(`Questo progetto ha già ${n} immagini nella galleria. OK = aggiungine altre, Annulla = svuota la galleria.`)){g.innerHTML='';save();return}pick(s=>{g.insertAdjacentHTML('beforeend',`<img src="${s}" alt="">`);save()},1)}
-    else if(k==='cat'){const u=prompt('Categoria del progetto (es. Grafica, Video, Motion)',c.dataset.cat||'');if(u!==null){c.dataset.cat=u.trim();route();save()}}
-    else if(k==='prv'){const u=prompt('Percorso di una clip breve (mp4) che parte al passaggio del mouse, es. /anteprime/logo.mp4. Vuoto per toglierla.',c.dataset.pv||'');if(u!==null){u.trim()?c.dataset.pv=u.trim():c.removeAttribute('data-pv');save()}}
+    else if(k==='cat'){ask('In quale categoria va questo progetto?',c.dataset.cat||'').then(u=>{if(u!==null){c.dataset.cat=u.trim();route();save()}})}
+    else if(k==='prv'){vpick(f=>{const p='/anteprime/'+f.name.toLowerCase().replace(/[^a-z0-9.]+/g,'-'),bu=URL.createObjectURL(f);up[bu]={p,f};c.dataset.pv=bu;save();toast('Anteprima aggiunta: passa il mouse sul progetto per vederla.',6000)})}
     else if(k==='ba'){c.toggleAttribute('data-ba');toast(c.hasAttribute('data-ba')?'Prima e dopo attivo: la copertina è il "prima", la prima immagine della galleria è il "dopo".':'Prima e dopo disattivato.');save()}
     else if(k==='reel'){const v=$('.reel');if(confirm('Showreel: vuoi caricare un video dal computer?\nOK = scegli il file, Annulla = scrivi un link o un percorso')){vpick(f=>{const p='/showreel.'+(f.name.split('.').pop()||'mp4').toLowerCase(),bu=URL.createObjectURL(f);up[bu]={p,f};v.src=bu;v.play().catch(()=>{});save()});return}const u=prompt('Percorso del file video (mp4 o webm), es. /showreel.mp4. Vuoto per toglierlo.',v.getAttribute('src')||'');if(u!==null){if(u.trim()){v.src=u.trim();v.play().catch(()=>{})}else v.removeAttribute('src');save()}}
-    else if(k==='addcat'){const u=(prompt('Nome della nuova categoria (es. Fotografia)')||'').replace(/[<>&"\/]/g,'').trim();if(u&&!$$('#cats a').some(x=>x.dataset.c===u)){$('#cats').insertAdjacentHTML('beforeend',catLi(u));fl();save()}}
+    else if(k==='addcat'){ask('Nome della nuova categoria').then(v=>{const u=(v||'').replace(/[<>&"\/]/g,'').trim();if(u&&!$$('#cats a').some(x=>x.dataset.c===u)){$('#cats').insertAdjacentHTML('beforeend',catLi(u));fl();save();toast('Categoria creata: '+u)}})}
     else if(k==='rmcat'){const l=a.closest('li'),nm=$('a',l).dataset.c;if(confirm(`Eliminare la categoria "${nm}" e tutti i suoi progetti?`)){$$('.card').filter(x=>x.dataset.cat===nm).forEach(x=>x.remove());l.remove();save()}}
     else if(k==='tm'||k==='tp'){if(!se||!se.isConnected)return toast('Clicca prima sul testo che vuoi ingrandire o ridurre.');const z=Math.min(3,Math.max(.4,Math.round(((parseFloat(se.style.zoom)||1)+(k==='tp'?.1:-.1))*100)/100));se.style.zoom=z;toast('Dimensione del testo: '+Math.round(z*100)+'%');save()}
-    else if(k==='login'){const r=prompt('Nome del repository GitHub, nel formato utente/repository (es. mattiaagostoni/portfolio)',(gh()||{}).repo||'');if(!r)return;const t=prompt('Incolla qui il token di GitHub (resta solo in questo browser)');if(!t)return;localStorage.setItem('portfolio-gh',JSON.stringify({repo:r.trim(),token:t.trim()}));location.reload()}
+    else if(k==='login'){ask('Area riservata: inserisci la password','','password').then(async pw=>{if(!pw)return;try{await doLogin(pw)}catch(err){toast(err.message,7000)}})}
     else if(k==='out'){if(confirm("Uscire dall'editor? Per modificare dovrai reinserire il token.")){localStorage.removeItem('portfolio-gh');location.reload()}}
     else if(k==='pub')pub();
     else if(k==='nfoto'){const ct=tcat();if(!ct)return;let cd=null;pick(s=>{if(!cd){$('#grid').insertAdjacentHTML('beforeend',card(ct));cd=$('#grid').lastElementChild;$('.media img',cd).src=s;toast(`Progetto aggiunto in "${ct}"`)}else $('.gal',cd).insertAdjacentHTML('beforeend',`<img src="${s}" alt="">`);fl();setEdit(true);save()},1)}
@@ -145,6 +165,28 @@ document.addEventListener('mouseout',e=>{
 });
 addEventListener('scroll',()=>{$('#pg').style.width=scrollY/Math.max(1,document.body.scrollHeight-innerHeight)*100+'%'});
 
+/* finestra di dialogo e accesso con password */
+function ask(t,v='',type='text'){
+  return new Promise(ok=>{
+    const m=$('#md'),i=$('#mi'),f=$('#mf');
+    $('#mt').textContent=t;i.type=type;i.value=v;m.classList.add('on');i.focus();
+    const end=x=>{m.classList.remove('on');f.onsubmit=null;$('#mx').onclick=null;ok(x)};
+    f.onsubmit=e=>{e.preventDefault();end(i.value)};
+    $('#mx').onclick=()=>end(null);
+  });
+}
+async function doLogin(pw){
+  if(/^(github_pat_|ghp_)/.test(pw)){
+    const r=await ask('Nome del repository (utente/repository)',(gh()||{}).repo||'');
+    if(!r)return;
+    localStorage.setItem('portfolio-gh',JSON.stringify({repo:r.trim(),token:pw.trim()}));location.reload();return;
+  }
+  const r=await fetch('/api/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({password:pw})});
+  if(r.status===401)throw new Error('Password sbagliata');
+  if(!r.ok)throw new Error('Accesso non disponibile (errore '+r.status+'). Controlla le impostazioni su Vercel.');
+  localStorage.setItem('portfolio-gh',JSON.stringify(await r.json()));location.reload();
+}
+
 /* aggiunta contenuti e pubblicazione su GitHub */
 function vpick(cb){
   const i=document.createElement('input');i.type='file';i.accept='video/*';
@@ -180,7 +222,7 @@ async function pub(){
     $('#fs').textContent='';H.classList.remove('admin');document.body.classList.remove('film');
     let html='<!DOCTYPE html>\n'+H.outerHTML;
     H.classList.add('admin');if(fm)document.body.classList.add('film');
-    html=html.replace(/(<div id="(?:wp|fp|lb|ts)") class="(?:go|on)"/g,'$1').replace(/ class="sel"/g,'').replace(/ sel"/g,'"');
+    html=html.replace(/(<div id="(?:wp|fp|lb|ts|md)") class="(?:go|on)"/g,'$1').replace(/ class="sel"/g,'').replace(/ sel"/g,'"');
     const files=[],mk=[];let i=0;
     for(const u of new Set(html.match(/data:image\/[a-z+]+;base64,[A-Za-z0-9+\/=]+/g)||[])){
       const p=hd[u]||('immagini/'+Date.now()+'-'+(i++)+(u.startsWith('data:image/png')?'.png':'.jpg'));
