@@ -199,3 +199,4 @@ body.edit .sel{outline:2px solid currentColor}
 #mf button{border-radius:99px;padding:10px 20px}
 #mx{background:none;color:#fff;border:1px solid #444}
 body.edit .media:not(:has(img[src]))::before{content:"+ Copertina";opacity:1}
+div.mail:hover{color:inherit;-webkit-text-stroke:0}

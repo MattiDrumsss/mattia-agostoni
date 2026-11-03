@@ -30,6 +30,11 @@ const BAR=`<div id="bar">
     <button data-act="addcat">Categoria</button>
   </div></details>
   <span class="tz"><button data-act="tm" title="Riduci il testo selezionato">A−</button><button data-act="tp" title="Ingrandisci il testo selezionato">A+</button></span>
+  <span class="tz"><button data-act="fb" title="Grassetto"><b>B</b></button><button data-act="fi" title="Corsivo"><i>I</i></button><button data-act="fu" title="Sottolineato"><u>U</u></button></span>
+  <details class="mn"><summary>Link</summary><div>
+    <button data-act="lk">Aggiungi o cambia link</button>
+    <button data-act="ulk">Togli link (solo testo)</button>
+  </div></details>
   <button class="pb" data-act="pub">Pubblica</button>
   <details class="mn"><summary>⋯</summary><div>
     <button data-act="ico">Logo nella scheda del browser</button>
@@ -79,7 +84,7 @@ function dl(){
 document.addEventListener('click',e=>{
   const T=e.target,l=T.closest('a');
   $$('details.mn[open]').forEach(d=>{if(!d.contains(T))d.removeAttribute('open')});
-  if(edit&&l&&l.hasAttribute('data-e'))e.preventDefault();
+  if(edit&&l&&l.closest('[data-e]'))e.preventDefault();
   const fb=T.closest('[data-f]');
   if(fb){$$('[data-f]').forEach(b=>b.classList.toggle('on',b===fb));$('#fs').textContent=fb.dataset.f==='Tutti'?'':`.card:not([data-cat=${JSON.stringify(fb.dataset.f)}]){display:none}`;return}
   const a=T.closest('[data-act]');
@@ -104,6 +109,9 @@ document.addEventListener('click',e=>{
       const L=$('.logo img');
       if(L&&L.getAttribute('src')&&confirm('Vuoi usare il logo che hai già messo in alto a sinistra?\nOK = sì, Annulla = scegli un altro file'))go(L.src);else pick(go);
     }
+    else if(k==='fb'||k==='fi'||k==='fu'){fmt({fb:'bold',fi:'italic',fu:'underline'}[k])}
+    else if(k==='lk')setLink();
+    else if(k==='ulk')unLink();
     else if(k==='cover'){pick(s=>{$('.media img',c).src=s;save();toast('Copertina aggiornata. Premi Pubblica per metterla online.',5000)})}
     else if(k==='vfile'){vpick(f=>{const p='/video/'+f.name.toLowerCase().replace(/[^a-z0-9.]+/g,'-'),bu=URL.createObjectURL(f);up[bu]={p,f};c.dataset.video=bu;if(!$('.media img',c).getAttribute('src'))frame(f,s=>{$('.media img',c).src=s;save()});save();toast('Video aggiunto al progetto. Ricorda di premere Pubblica.',6000)})}
     else if(k==='addsk'){$('#sk').insertAdjacentHTML('beforeend',sk('Nuova competenza',70));setEdit(edit);save()}
@@ -179,6 +187,39 @@ document.addEventListener('mouseout',e=>{
 });
 addEventListener('scroll',()=>{$('#pg').style.width=scrollY/Math.max(1,document.body.scrollHeight-innerHeight)*100+'%'});
 
+/* formattazione del testo e link */
+document.addEventListener('mousedown',e=>{if(e.target.closest('#bar'))e.preventDefault()});
+function tsel(){
+  if(!edit||!se||!se.isConnected){toast('Attiva Modifica e clicca sul testo da cambiare.');return null}
+  const s=getSelection();
+  if(!s.rangeCount||s.isCollapsed||!se.contains(s.anchorNode)){const r=document.createRange();r.selectNodeContents(se);s.removeAllRanges();s.addRange(r)}
+  return s;
+}
+function fmt(c){if(!tsel())return;document.execCommand(c);save()}
+function swap(el,tag,mod){
+  const n=document.createElement(tag);
+  [...el.attributes].forEach(a=>{if(!['href','data-l','data-lk','target','rel'].includes(a.name))n.setAttribute(a.name,a.value)});
+  mod(n);n.innerHTML=el.innerHTML;el.replaceWith(n);return n;
+}
+function unLink(){
+  if(!edit||!se||!se.isConnected){toast('Attiva Modifica e clicca sul link da togliere.');return}
+  if(se.tagName==='A')se=swap(se,se.classList.contains('mail')?'div':'span',n=>n.setAttribute('data-lk','1'));
+  else{tsel();document.execCommand('unlink')}
+  save();toast('Link tolto: ora è solo testo.');
+}
+async function setLink(){
+  if(!edit||!se||!se.isConnected){toast('Attiva Modifica e clicca sul testo da trasformare in link.');return}
+  const s=getSelection(),rg=s.rangeCount?s.getRangeAt(0).cloneRange():null;
+  let u=await ask('Indirizzo del link (https://… oppure una mail)',se.tagName==='A'?se.getAttribute('href'):'');
+  if(!u||!u.trim())return;
+  u=u.trim();
+  if(/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(u))u='mailto:'+u;else if(!/^(https?:|mailto:|tel:|\/|#)/.test(u))u='https://'+u;
+  if(se.tagName==='A')se.href=u;
+  else if(se.hasAttribute('data-lk'))se=swap(se,'a',n=>{n.setAttribute('data-l','');n.href=u});
+  else{if(rg){s.removeAllRanges();s.addRange(rg)}tsel();document.execCommand('createLink',false,u)}
+  save();toast('Link impostato.');
+}
+
 /* finestra di dialogo e accesso con password */
 function ask(t,v='',type='text'){
   return new Promise(ok=>{
@@ -221,7 +262,7 @@ function tcat(){
   return u;
 }
 async function api(p,o={}){
-  const g=gh(),r=await fetch('https://api.github.com/repos/'+g.repo+p,{...o,headers:{Authorization:'Bearer '+g.token,Accept:'application/vnd.github+json','Content-Type':'application/json'}});
+  const g=gh(),r=await fetch('https://api.github.com/repos/'+g.repo+p,{...o,cache:'no-store',headers:{Authorization:'Bearer '+g.token,Accept:'application/vnd.github+json','Content-Type':'application/json'}});
   if(!r.ok)throw new Error(r.status+' '+(await r.text()).slice(0,140));
   return r.json();
 }
@@ -248,13 +289,19 @@ async function pub(){
       html=html.split(bu).join(o.p);
       if(!o.d){files.push([o.p.slice(1),await b64(o.f)]);mk.push(()=>o.d=1)}
     }
-    const b=(await api('')).default_branch,ref=(await api('/git/ref/heads/'+b)).object.sha,cm=await api('/git/commits/'+ref);
+    const b=(await api('')).default_branch;
     const tree=[];
     for(const [p,c] of files)tree.push({path:p,mode:'100644',type:'blob',sha:await blob({content:c,encoding:'base64'})});
     tree.push({path:'index.html',mode:'100644',type:'blob',sha:await blob({content:html,encoding:'utf-8'})});
-    const nt=await api('/git/trees',{method:'POST',body:JSON.stringify({base_tree:cm.tree.sha,tree})});
-    const nc=await api('/git/commits',{method:'POST',body:JSON.stringify({message:'Aggiornamento portfolio',tree:nt.sha,parents:[ref]})});
-    await api('/git/refs/heads/'+b,{method:'PATCH',body:JSON.stringify({sha:nc.sha})});
+    for(let t=0;;t++){
+      try{
+        const ref=(await api('/git/ref/heads/'+b)).object.sha,cm=await api('/git/commits/'+ref);
+        const nt=await api('/git/trees',{method:'POST',body:JSON.stringify({base_tree:cm.tree.sha,tree})});
+        const nc=await api('/git/commits',{method:'POST',body:JSON.stringify({message:'Aggiornamento portfolio',tree:nt.sha,parents:[ref]})});
+        await api('/git/refs/heads/'+b,{method:'PATCH',body:JSON.stringify({sha:nc.sha})});
+        break;
+      }catch(e){if(t>=3||!/ 422 |^422/.test(e.message))throw e;await new Promise(x=>setTimeout(x,1500))}
+    }
     mk.forEach(f=>f());
     toast('Pubblicato su GitHub! Il sito online si aggiorna tra circa un minuto.',10000);
   }catch(err){H.classList.add('admin');toast('ERRORE, non pubblicato: '+err.message,20000)}
