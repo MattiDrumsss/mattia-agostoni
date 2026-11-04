@@ -25,7 +25,7 @@ $$('.card .tl').forEach(t=>t.innerHTML=TL);
 $('#lb').innerHTML=`<button class="lbx" data-act="close" aria-label="Chiudi"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button><div id="lbc"></div><div id="lbn"><button class="lbp" data-act="prev" aria-label="Foto precedente"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg></button><span id="lbs"></span><button class="lbq" data-act="next" aria-label="Foto successiva"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5l7 7-7 7"/></svg></button></div>`;
 $$('#cats li').forEach(l=>{const d=$('[data-act=rmcat]',l);if(d&&!$('[data-act=rncat]',l))d.insertAdjacentHTML('beforebegin','<b class="x" data-act="rncat">Rinomina</b>')});
 if(!root.dataset.m1){renCat('Motion','Fotografia');root.dataset.m1=1}
-const BAR=`<div id="bar">
+const BAR=`<div id="bar"><button class="bt" data-act="bar" aria-label="Apri o chiudi l'editor"><svg class="i1" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 013 3L7 19l-4 1 1-4z"/></svg><svg class="i2" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button><div class="bi">
   <button id="tg" class="sw" data-act="tg"><i></i><span>Modifica</span></button>
   <details class="mn"><summary>+ Aggiungi</summary><div>
     <button data-act="nfoto">Foto</button>
@@ -45,7 +45,7 @@ const BAR=`<div id="bar">
     <button data-act="rs">Annulla modifiche</button>
     <button data-act="out">Esci</button>
   </div></details>
-</div>`;
+</div></div>`;
 {const b=$('#bar');if(b)b.outerHTML=BAR;else document.body.insertAdjacentHTML('beforeend',BAR);if(!$('#md'))document.body.insertAdjacentHTML('beforeend',`<div id="md"><form id="mf"><h3 id="mt"></h3><input id="mi" autocomplete="off"><div><button type="button" id="mx">Annulla</button><button type="submit">OK</button></div></form></div>`)}
 root.dataset.init=1;
 
@@ -133,6 +133,7 @@ document.addEventListener('click',e=>{
     else if(k==='addcat'){ask('Nome della nuova categoria').then(v=>{const u=(v||'').replace(/[<>&"\/]/g,'').trim();if(u&&!$$('#cats a').some(x=>x.dataset.c===u)){$('#cats').insertAdjacentHTML('beforeend',catLi(u));fl();save();toast('Categoria creata: '+u)}})}
     else if(k==='rmcat'){const l=a.closest('li'),nm=$('a',l).dataset.c;if(confirm(`Eliminare la categoria "${nm}" e tutti i suoi progetti?`)){$$('.card').filter(x=>x.dataset.cat===nm).forEach(x=>x.remove());l.remove();save()}}
     else if(k==='tm'||k==='tp'){if(!se||!se.isConnected)return toast('Clicca prima sul testo che vuoi ingrandire o ridurre.');const z=Math.min(3,Math.max(.4,Math.round(((parseFloat(se.style.zoom)||1)+(k==='tp'?.1:-.1))*100)/100));se.style.zoom=z;toast('Dimensione del testo: '+Math.round(z*100)+'%');save()}
+    else if(k==='bar'){const b=$('#bar'),bi=$('.bi',b);if(b.classList.contains('open')){b.classList.remove('full','open');bi.style.maxWidth='0px';$$('#bar details[open]').forEach(d=>d.removeAttribute('open'))}else{b.classList.add('open');bi.style.maxWidth=Math.min(bi.scrollWidth+10,innerWidth*.96-70)+'px';setTimeout(()=>{if(b.classList.contains('open'))b.classList.add('full')},720)}}
     else if(k==='login'){ask('Area riservata: inserisci la password','','password').then(async pw=>{if(!pw)return;try{await doLogin(pw)}catch(err){toast(err.message,7000)}})}
     else if(k==='out'){if(confirm("Uscire dall'editor? Per modificare dovrai reinserire il token.")){localStorage.removeItem('portfolio-gh');location.reload()}}
     else if(k==='pub')pub();
@@ -203,7 +204,7 @@ function renCat(old,u){
   $$('.card').filter(x=>x.dataset.cat===old).forEach(x=>x.dataset.cat=u);
   return true;
 }
-let lt;
+let lt,tt;
 const ro=new ResizeObserver(()=>{cancelAnimationFrame(lt);lt=requestAnimationFrame(lay)});
 function lay(){
   const g=$('#grid'),on=g.classList.contains('dense')&&!document.body.classList.contains('film');
@@ -373,9 +374,14 @@ function route(){
 }
 addEventListener('hashchange',()=>{
   const c=cc();if(c===cur)return;cur=c;
-  const w=$('#wp');$('b',w).textContent=c||'Home';
+  const w=$('#wp'),b=$('b',w);
+  b.innerHTML='';
+  [...(c||'Home')].forEach((ch,i)=>{const sp=document.createElement('span'),it=document.createElement('i');it.textContent=ch===' '?'\u00a0':ch;it.style.setProperty('--i',i);sp.appendChild(it);b.appendChild(sp)});
   w.classList.remove('go');void w.offsetWidth;w.classList.add('go');
-  setTimeout(route,480);
+  document.body.classList.add('tr');
+  clearTimeout(tt);
+  tt=setTimeout(()=>{route();setTimeout(()=>document.body.classList.remove('tr'),70)},420);
+  setTimeout(()=>w.classList.remove('go'),1300);
 });
 document.addEventListener('mouseover',e=>{
   const a=e.target.closest('#cats a');
