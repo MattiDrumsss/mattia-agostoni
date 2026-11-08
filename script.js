@@ -2,6 +2,8 @@ const $=(s,r=document)=>r.querySelector(s),$$=(s,r=document)=>[...r.querySelecto
 const root=$('#root'),K='portfolio-v3',H=document.documentElement;
 let edit=false,t,n=0,LB=[],se=null;
 
+const FM=[['Automatico',''],['Quadrato 1:1','1/1'],['Verticale 4:5','4/5'],['Verticale 3:4','3/4'],['Verticale 2:3','2/3'],['Verticale 9:16','9/16'],['Orizzontale 4:3','4/3'],['Orizzontale 3:2','3/2'],['Orizzontale 16:9','16/9'],['Cinema 21:9','21/9']];
+const BFM='<details class="mn"><summary>Formato</summary><div>'+FM.map(([t,v])=>`<button data-act="bfm"${v?` data-v="${v}"`:''}>${t}</button>`).join('')+'</div></details>';
 const PAL='<div class="pal"><div class="cols"></div><p class="fnt" data-e></p><button class="ad" data-act="addcol">Aggiungi un colore</button></div>';
 const ADDB='<div class="addb"><span>Aggiungi un blocco:</span><button data-act="ab" data-v="t">Testo</button><button data-act="ab" data-v="i">Foto</button><button data-act="ab" data-v="i2">Due foto</button><button data-act="ab" data-v="v">Video</button><button data-act="ab" data-v="q">Citazione</button></div>';
 const TL=`<span class="dg" draggable="true" title="Trascina per cambiare l'ordine">Sposta</span><button data-act="cover">Copertina</button><button data-act="img">Galleria</button><details class="mn"><summary>Video</summary><div><button data-act="vfile">Carica un file</button><button data-act="vid">Incolla un link</button></div></details><details class="mn"><summary>Formato</summary><div><button data-act="ar">Automatico (standard)</button><button data-act="ar" data-v="1/1">Quadrato 1:1</button><button data-act="ar" data-v="4/5">Verticale 4:5 (Instagram)</button><button data-act="ar" data-v="3/4">Verticale 3:4</button><button data-act="ar" data-v="2/3">Verticale 2:3 (poster, foto)</button><button data-act="ar" data-v="9/16">Verticale 9:16 (Reel, Stories)</button><button data-act="ar" data-v="210/297">Foglio A4 verticale</button><button data-act="ar" data-v="4/3">Orizzontale 4:3</button><button data-act="ar" data-v="3/2">Orizzontale 3:2 (foto)</button><button data-act="ar" data-v="16/9">Orizzontale 16:9 (video)</button><button data-act="ar" data-v="21/9">Cinema 21:9</button></div></details><details class="mn"><summary>Altro</summary><div><button data-act="cat">Cambia categoria</button><button data-act="prv">Anteprima al passaggio</button><button data-act="ba">Prima e dopo</button><button data-act="ft">Metti o togli da In evidenza</button><button data-act="dr">Nascondi o mostra (bozza)</button><button data-act="dup">Duplica progetto</button><button data-act="del">Elimina progetto</button></div></details>`;
@@ -52,6 +54,7 @@ if(!$('.rot'))$('.hero h1').insertAdjacentHTML('afterend','<p class="rot" data-w
 if(!$('.cpl'))$('[data-act=film]').insertAdjacentHTML('afterend','<button class="f cpl" data-act="cpl">Copia link</button>');
 if(!$('.upd'))$('footer span').insertAdjacentHTML('afterend','<span class="upd"></span>');
 if(!$('#mq'))$('#grid').insertAdjacentHTML('afterend','<div id="mq"><div class="mt"></div></div>');
+$$('.blk[data-t=i] .bct,.blk[data-t=i2] .bct').forEach(b=>{if(!$('[data-act=bfm]',b))b.insertAdjacentHTML('afterbegin',BFM)});
 const BAR=`<div id="bar"><button class="bt" data-act="bar" aria-label="Apri o chiudi l'editor"><svg class="i1" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 013 3L7 19l-4 1 1-4z"/></svg><svg class="i2" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button><div class="bi">
   <button id="tg" class="sw" data-act="tg"><i></i><span>Modifica</span></button>
   <details class="mn"><summary>+ Aggiungi</summary><div>
@@ -147,7 +150,7 @@ document.addEventListener('click',e=>{
     }
     else if(k==='imp'){const c0=cc();if(!c0){toast('Apri prima una categoria: l\'impaginazione si imposta pagina per pagina.',5000);return}const A=$$('#cats a').find(x=>x.dataset.c===c0);if(!A)return;A.toggleAttribute('data-lay');applyLay();save();toast(A.hasAttribute('data-lay')?'Impaginazione compatta attivata: niente buchi tra i progetti. Premi Pubblica per metterla online.':'Impaginazione compatta disattivata.',6000)}
     else if(k==='rncat'){const old=$('a',a.closest('li')).dataset.c;ask('Nuovo nome della categoria',old).then(v=>{const u=(v||'').replace(/[<>&"\/]/g,'').trim();if(u&&u!==old&&renCat(old,u)){fl();save();toast('Categoria rinominata in '+u+'. Premi Pubblica per metterla online.',5000)}})}
-    else if(k==='ar'){const m=$('.media',c);if(a.dataset.v)m.style.aspectRatio=a.dataset.v;else m.style.removeProperty('aspect-ratio');save();toast('Formato cambiato. Premi Pubblica per metterlo online.',4000)}
+    else if(k==='ar'){const m=$('.media',c);setAr(m,a.dataset.v||'');save();toast('Formato cambiato. Premi Pubblica per metterlo online.',4000)}
     else if(k==='fb'||k==='fi'||k==='fu'){fmt({fb:'bold',fi:'italic',fu:'underline'}[k])}
     else if(k==='lk')setLink();
     else if(k==='ulk')unLink();
@@ -172,16 +175,17 @@ document.addEventListener('click',e=>{
     else if(k==='ft'){c.toggleAttribute('data-feat');renderFeat();save();toast(c.hasAttribute('data-feat')?'Aggiunto a "In evidenza" nella home.':'Tolto da "In evidenza".',4000)}
     else if(k==='addcol'){$('.cols',c).insertAdjacentHTML('beforeend',COL('#cccccc'));save()}
     else if(k==='rmcol'){a.closest('.col').remove();save()}
+    else if(k==='bfm'){const b=a.closest('.blk');$$('.bp',b).forEach(x=>setAr(x,a.dataset.v||''));save();toast('Formato cambiato. Premi Pubblica per metterlo online.',4000)}
     else if(k==='bup'){const b=a.closest('.blk'),p=b.previousElementSibling;if(p){p.before(b);save()}}
     else if(k==='bdn'){const b=a.closest('.blk'),n2=b.nextElementSibling;if(n2){n2.after(b);save()}}
     else if(k==='bdel'){if(confirm('Togliere questo blocco?')){a.closest('.blk').remove();save()}}
     else if(k==='bvl'){const b=a.closest('.blk');ask('Link YouTube o Vimeo del video',b.dataset.v||'').then(u=>{if(u&&u.trim()){b.dataset.v=u.trim();$('.vb',b).innerHTML=emb(u.trim(),0);save()}})}
     else if(k==='ab'){
-      const v=a.dataset.v,bks=$('.bks',c),CT=x=>`<div class="bct"><button data-act="bup">Su</button><button data-act="bdn">Giù</button>${x?'<button data-act="bvl">Link</button>':''}<button data-act="bdel">Togli</button></div>`;
+      const v=a.dataset.v,bks=$('.bks',c),CT=(x,f)=>`<div class="bct"><button data-act="bup">Su</button><button data-act="bdn">Giù</button>${f?BFM:''}${x?'<button data-act="bvl">Link</button>':''}<button data-act="bdel">Togli</button></div>`;
       const ph='<div class="bp" data-img><img alt="" loading="lazy"></div>';
       const HB={t:`<div class="blk" data-t="t"><div class="bc b-t" data-e>Scrivi qui il testo…</div>${CT()}</div>`,
-        i:`<div class="blk" data-t="i"><div class="bc">${ph}</div>${CT()}</div>`,
-        i2:`<div class="blk" data-t="i2"><div class="bc">${ph}${ph}</div>${CT()}</div>`,
+        i:`<div class="blk" data-t="i"><div class="bc">${ph}</div>${CT(0,1)}</div>`,
+        i2:`<div class="blk" data-t="i2"><div class="bc">${ph}${ph}</div>${CT(0,1)}</div>`,
         q:`<div class="blk" data-t="q"><div class="bc"><blockquote data-e>“Scrivi qui la frase”</blockquote><p class="qn" data-e>Nome, ruolo</p></div>${CT()}</div>`};
       if(v==='v')ask('Link YouTube o Vimeo del video').then(u=>{if(u&&u.trim()){bks.insertAdjacentHTML('beforeend',`<div class="blk" data-t="v" data-v="${u.trim().replace(/"/g,'')}"><div class="bc"><div class="vb"></div></div>${CT(1)}</div>`);$('.vb',bks.lastElementChild).innerHTML=emb(u.trim(),0);save()}});
       else{bks.insertAdjacentHTML('beforeend',HB[v]);setEdit(true);save()}
@@ -405,6 +409,10 @@ addEventListener('scroll',()=>{const u=$('#up'),m=document.documentElement.scrol
 renderUpd();rotInit();
 
 /* in evidenza, immagini, colori */
+function setAr(m,v){
+  if(v){m.style.aspectRatio=v;const p=v.split('/').map(parseFloat);m.style.setProperty('--arn',p[0]/p[1])}
+  else{m.style.removeProperty('aspect-ratio');m.style.removeProperty('--arn')}
+}
 function lz(){$$('#root img').forEach(i=>{if(!i.closest('.logo')&&!i.hasAttribute('loading')){i.setAttribute('loading','lazy');i.setAttribute('decoding','async')}})}
 function renderFeat(){
   const w=$('#fw');if(!w)return;
@@ -645,6 +653,7 @@ function route(){
   $$('.emb,.vb').forEach(e=>e.innerHTML='');
   if(card&&card.dataset.video)$('.emb',card).innerHTML=emb(card.dataset.video,0);
   if(card)$$('.blk[data-t=v]',card).forEach(b=>{$('.vb',b).innerHTML=emb(b.dataset.v||'',0)});
+  if(card){const m=$('.media',card),ar=(m.style.aspectRatio||'').split('/').map(parseFloat);if(ar.length===2&&ar[0]&&ar[1])m.style.setProperty('--arn',ar[0]/ar[1])}
   pnav(card,c);
   fl();
   buildMq();stats();skills();
