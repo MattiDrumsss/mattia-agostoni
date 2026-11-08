@@ -9,6 +9,7 @@ const card=(c='')=>`<article class="card" data-cat="${c}"><div class="media" dat
 const li=(a,b)=>`<li><span data-e>${a}</span>${b?`<a data-e data-l href="#">${b}</a>`:''}<b class="x" data-act="rm">Togli</b></li>`;
 const PV=/[?&]pv=1/.test(location.search);
 const mqx={pos:0,v:0,drag:false,hover:false,pause:0,W:1,last:0,moved:0,s:1};
+document.body.classList.add('film');
 const gh=()=>{try{return JSON.parse(localStorage.getItem('portfolio-gh'))}catch(e){return null}},up={},hd={};
 const sk=(a,p)=>`<li><span data-e>${a}</span><span class="bar"><i style="--p:${p/100}"></i></span><b class="pc">${p}%</b><input class="rg" type="range" min="0" max="100" value="${p}" aria-label="Percentuale della competenza"><b class="x" data-act="rm">Togli</b></li>`;
 const catLi=c=>`<li><a href="#/${encodeURIComponent(c)}" data-c="${c}">${c}</a><span class="n"></span><b class="x" data-act="rncat">Rinomina</b><b class="x" data-act="rmcat">Togli</b></li>`;
@@ -45,7 +46,8 @@ if(!$('.wr')){const a0=$('.hero .row a');if(a0){const d=document.createElement('
 if(!$('#feat'))$('#ix').insertAdjacentHTML('beforebegin','<section id="feat"><div class="sh"><h2>In evidenza</h2></div><div id="fw"></div></section>');
 if(!$('.avail'))$('.hero h1').insertAdjacentHTML('beforebegin','<div class="avail"><i></i><span data-e>Disponibile per nuovi lavori</span><b class="x" data-act="avail">Mostra o nascondi</b></div>');
 const COL=v=>`<span class="col"><i style="background:${v}"></i><b>${v.toUpperCase()}</b><input class="cin" type="color" value="${v}" aria-label="Colore"><b class="x" data-act="rmcol">Togli</b></span>`;
-if(!$('#st'))$('#feat').insertAdjacentHTML('afterend','<section id="st" class="stats"><div class="stat" data-k="p"><b>0</b><span>progetti</span></div><div class="stat" data-k="c"><b>0</b><span>categorie</span></div><div class="stat" data-k="v"><b>0</b><span>video</span></div></section>');
+{const o=$('section#st');if(o)o.remove();
+if(!$('div#st'))$('.ab .big').insertAdjacentHTML('afterend','<div id="st" class="stats"><div class="stat" data-k="p"><b>0</b><span>progetti</span></div><div class="stat" data-k="c"><b>0</b><span>categorie</span></div><div class="stat" data-k="v"><b>0</b><span>video</span></div></div>')}
 if(!$('.rot'))$('.hero h1').insertAdjacentHTML('afterend','<p class="rot" data-w="grafico,video maker,fotografo"><span data-e>Sono</span> <span class="rw"></span><i class="cr"></i><b class="x" data-act="words">Cambia parole</b></p>');
 if(!$('.cpl'))$('[data-act=film]').insertAdjacentHTML('afterend','<button class="f cpl" data-act="cpl">Copia link</button>');
 if(!$('.upd'))$('footer span').insertAdjacentHTML('afterend','<span class="upd"></span>');
@@ -199,7 +201,14 @@ document.addEventListener('click',e=>{
     else if(k==='pub')pub();
     else if(k==='nfoto'){const ct=tcat();if(!ct)return;let cd=null;pick(s=>{if(!cd){$('#grid').insertAdjacentHTML('beforeend',card(ct));cd=$('#grid').lastElementChild;$('.media img',cd).src=s;toast(`Progetto aggiunto in "${ct}"`)}else $('.gal',cd).insertAdjacentHTML('beforeend',`<img src="${s}" alt="">`);fl();setEdit(true);save()},1)}
     else if(k==='nvideo'){const ct=tcat();if(!ct)return;vpick(f=>{const p='/video/'+f.name.toLowerCase().replace(/[^a-z0-9.]+/g,'-'),bu=URL.createObjectURL(f);up[bu]={p,f};$('#grid').insertAdjacentHTML('beforeend',card(ct));const cd=$('#grid').lastElementChild;cd.dataset.video=bu;$('h3',cd).textContent=f.name.replace(/\.[^.]+$/,'').replace(/[-_]+/g,' ');frame(f,s=>{$('.media img',cd).src=s;save()});fl();setEdit(true);save();toast(`Video aggiunto in "${ct}"`)})}
-    else if(k==='film'){document.body.classList.toggle('film');if(edit)toast('Il rullino si vede quando Modifica è spento.',4000);buildMq()}
+    else if(k==='film'){
+      const B=document.body;
+      if(edit){B.classList.toggle('film');toast('Con Modifica attivo vedi sempre la griglia: spegni Modifica per vedere il rullino.',5000);buildMq();return}
+      const from=B.classList.contains('film')?$('#mq'):$('#grid');
+      if(from.classList.contains('out'))return;
+      from.classList.add('out');
+      setTimeout(()=>{from.classList.remove('out');B.classList.toggle('film');buildMq()},420);
+    }
     else if(k==='prev')show(n-1);
     else if(k==='next')show(n+1);
     else if(k==='close'){$('#lb').classList.remove('on');$('#lbc').innerHTML=''}
@@ -293,14 +302,16 @@ new MutationObserver(()=>{cancelAnimationFrame(lt);lt=requestAnimationFrame(lay)
 /* rullino automatico, parole, numeri, scorciatoie */
 const reduce=matchMedia('(prefers-reduced-motion:reduce)').matches;
 function hc(){try{const h=decodeURIComponent(location.hash.slice(1));return h[0]==='/'?h.slice(1).split('/')[0]:''}catch(e){return ''}}
+function filmLabel(){const f=$('[data-act=film]');if(f)f.textContent=document.body.classList.contains('film')&&!edit?'Vista a griglia':'Vista a rullino'}
 function buildMq(){
+  filmLabel();
   const t=$('#mq .mt');if(!t)return;
   const c=hc();
   if(!c||!document.body.classList.contains('film')||edit){t.innerHTML='';return}
   const L=$$('.card').filter(x=>x.dataset.cat===c&&!x.hasAttribute('data-draft'));
-  const item=x=>{const im=$('.media img',x),sr=im&&im.getAttribute('src'),ar=$('.media',x).style.aspectRatio||'4 / 5',ds=$('p',$('.meta',x));
-    return `<a class="mi" href="#/${encodeURIComponent(c)}/${x.dataset.id}" draggable="false"><span class="mm" style="aspect-ratio:${ar}">${sr?`<img src="${sr}" alt="" draggable="false">`:''}</span><b>${esc($('h3',x).textContent)}</b><small>${esc(ds?ds.textContent:'')}</small></a>`};
-  const set=L.map(item).join('');
+  const item=(x,n)=>{const im=$('.media img',x),sr=im&&im.getAttribute('src'),ar=$('.media',x).style.aspectRatio||'4 / 5',ds=$('p',$('.meta',x));
+    return `<a class="mi" style="--i:${n}" href="#/${encodeURIComponent(c)}/${x.dataset.id}" draggable="false"><span class="mm" style="aspect-ratio:${ar}">${sr?`<img src="${sr}" alt="" draggable="false">`:''}</span><b>${esc($('h3',x).textContent)}</b><small>${esc(ds?ds.textContent:'')}</small></a>`};
+  const set=L.map((x,n)=>item(x,n)).join('');
   t.innerHTML=set;
   mqx.W=t.scrollWidth+24;
   t.innerHTML=set.repeat(Math.max(2,Math.ceil(innerWidth*2/Math.max(1,mqx.W))));
@@ -357,6 +368,20 @@ function countUp(el){
     const t0=performance.now();
     (function f(t){const k=Math.min(1,(t-t0)/1400),e=1-Math.pow(1-k,4);b.textContent=Math.round(n*e);if(k<1)requestAnimationFrame(f)})(t0);
   });
+}
+const io3=new IntersectionObserver(es=>es.forEach(x=>{if(x.isIntersecting){countSk(x.target);io3.unobserve(x.target)}}),{threshold:.3});
+function countSk(ul){
+  $$('li',ul).forEach((l,i)=>{
+    const b=$('.pc',l),n=+b.dataset.n||0;
+    if(reduce){b.textContent=n+'%';return}
+    const t0=performance.now()+i*110+250;
+    (function f(t){const k=Math.max(0,Math.min(1,(t-t0)/1500)),e=1-Math.pow(1-k,4);b.textContent=Math.round(n*e)+'%';if(k<1)requestAnimationFrame(f)})(performance.now());
+  });
+}
+function skills(){
+  const ul=$('#sk');if(!ul)return;
+  $$('li',ul).forEach(l=>{const i=$('.bar i',l),b=$('.pc',l);if(!i||!b)return;b.dataset.n=Math.round(parseFloat(i.style.getPropertyValue('--p')||0)*100);b.textContent='0%'});
+  io3.unobserve(ul);io3.observe(ul);
 }
 function stats(){
   const st=$('#st');if(!st)return;
@@ -587,7 +612,7 @@ document.addEventListener('focusin',e=>{
 document.addEventListener('input',e=>{
   if(!e.target.matches('.rg'))return;
   const l=e.target.closest('li'),v=e.target.value;
-  $('.bar i',l).style.setProperty('--p',v/100);$('.pc',l).textContent=v+'%';e.target.setAttribute('value',v);
+  $('.bar i',l).style.setProperty('--p',v/100);{const pb=$('.pc',l);pb.textContent=v+'%';pb.dataset.n=v}e.target.setAttribute('value',v);
 });
 
 /* pagine per categoria, con transizione */
@@ -622,8 +647,8 @@ function route(){
   if(card)$$('.blk[data-t=v]',card).forEach(b=>{$('.vb',b).innerHTML=emb(b.dataset.v||'',0)});
   pnav(card,c);
   fl();
-  buildMq();stats();
-  $$('.sh,#ix,.ab').forEach(e=>{e.classList.remove('vw');io.unobserve(e);io.observe(e)});
+  buildMq();stats();skills();
+  $$('.sh,#ix,.ab,#contatti,#feat,#cv').forEach(e=>{e.classList.remove('vw');io.unobserve(e);io.observe(e)});
   const t2=c?null:$({lavori:'#ix',chi:'#chi',cv:'#cv',contatti:'#contatti'}[h]||'#none');
   t2?t2.scrollIntoView({behavior:'instant'}):scrollTo({top:0,behavior:'instant'});
 }
