@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: https://mattia-agostoni.vercel.app/sitemap.xml
