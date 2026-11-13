@@ -1,0 +1,68 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ===== Portfolio di Mattia (collezioni con prefisso pf_) =====
+    function pfSigned() { return request.auth != null; }
+    function pfVerified() { return pfSigned() && request.auth.token.email_verified == true; }
+    // SOSTITUISCI con la tua mail da amministratore (la stessa di "Collega Firebase e servizi")
+    function pfAdmin() { return pfVerified() && request.auth.token.email == 'LA_TUA_MAIL@ESEMPIO.COM'; }
+    function pfJob(job) { return get(/databases/$(database)/documents/pf_jobs/$(job)).data; }
+    function pfClient(job) { return pfVerified() && request.auth.token.email in pfJob(job).emails; }
+    function pfCollab() { return pfVerified() && request.auth.token.email in get(/databases/$(database)/documents/pf_config/collab).data.emails; }
+
+    match /pf_config/{id} {
+      allow read: if pfSigned();
+      allow write: if pfAdmin();
+    }
+
+    match /pf_favs/{uid} {
+      allow read: if (pfSigned() && request.auth.uid == uid) || resource.data.shared == true;
+      allow write: if pfVerified() && request.auth.uid == uid;
+    }
+
+    match /pf_likes/{id} {
+      allow read: if true;
+      allow create: if pfVerified() && request.resource.data.uid == request.auth.uid
+                    && id == request.resource.data.pid + '__' + request.auth.uid;
+      allow delete: if pfVerified() && resource.data.uid == request.auth.uid;
+    }
+
+    match /pf_comments/{id} {
+      allow read: if resource.data.ok == true || (pfSigned() && resource.data.uid == request.auth.uid) || pfAdmin();
+      allow create: if pfVerified() && request.resource.data.uid == request.auth.uid
+                    && request.resource.data.ok == false && request.resource.data.text.size() <= 800;
+      allow update, delete: if pfAdmin();
+    }
+
+    match /pf_requests/{id} {
+      allow read: if pfAdmin() || (pfSigned() && resource.data.uid == request.auth.uid);
+      allow create: if pfVerified() && request.resource.data.uid == request.auth.uid
+                    && request.resource.data.status == 'ricevuta' && request.resource.data.msg.size() <= 2000;
+      allow update, delete: if pfAdmin();
+    }
+
+    match /pf_jobs/{job} {
+      allow read: if pfAdmin() || (pfVerified() && request.auth.token.email in resource.data.emails);
+      allow create, delete: if pfAdmin();
+      allow update: if pfAdmin() || (pfVerified() && request.auth.token.email in resource.data.emails
+                    && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'statusAt']));
+
+      match /files/{f} {
+        allow read: if pfAdmin() || pfClient(job);
+        allow write: if pfAdmin();
+      }
+      match /notes/{n} {
+        allow read: if pfAdmin() || pfClient(job);
+        allow create: if pfClient(job) && request.resource.data.uid == request.auth.uid;
+        allow update, delete: if pfAdmin();
+      }
+    }
+
+    match /pf_proposals/{id} {
+      allow read: if pfAdmin() || (pfSigned() && resource.data.uid == request.auth.uid);
+      allow create: if pfCollab() && request.resource.data.uid == request.auth.uid && request.resource.data.status == 'nuova';
+      allow update, delete: if pfAdmin();
+    }
+  }
+}
